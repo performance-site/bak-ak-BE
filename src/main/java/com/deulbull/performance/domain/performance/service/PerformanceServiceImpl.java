@@ -15,13 +15,11 @@ import com.deulbull.performance.domain.performance.repository.PerformanceReposit
 import com.deulbull.performance.domain.performance.web.dto.PerformanceCreateRequestDto;
 import com.deulbull.performance.domain.performance.web.dto.PerformanceCreateRequestDto.MembersDto;
 import com.deulbull.performance.domain.performance.web.dto.PerformanceDetailResponseDto;
-import com.deulbull.performance.domain.performance.web.dto.PerformanceDetailResponseDto.MoreLinkDto;
 import com.deulbull.performance.domain.performance.web.dto.PerformanceSetlistResponse;
 import com.deulbull.performance.domain.performance.web.dto.PerformanceSetlistResponse.PerformanceSetListDetail;
 import com.deulbull.performance.domain.performanceSongs.entity.PerformanceSong;
 import com.deulbull.performance.domain.performanceSongs.repository.PerformanceSongsRepository;
 import com.deulbull.performance.domain.song.entity.Song;
-import com.deulbull.performance.domain.song.exception.SongNotFoundException;
 import com.deulbull.performance.domain.song.repository.SongRepository;
 import com.deulbull.performance.global.s3.S3Uploader;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -201,50 +200,20 @@ public class PerformanceServiceImpl implements PerformanceService {
         posterUrls.add(performance.getPosterFrontUrl());
         posterUrls.add(performance.getPosterBackUrl());
 
-        // 현재 곡
-        String currentSongTitle = null;
-        String currentSongArtist = null;
-        String currentSongAlbumUrl = null;
+        // dateTime: yyyy.MM.dd 형식
+        String dateTimeFormatted = performance.getDateTime() != null
+                ? performance.getDateTime().format(DateTimeFormatter.ofPattern("yyyy.MM.dd"))
+                : "";
 
-
-        if (performance.getCurrentSong() != null) {
-            // 404: 해당 ID의 곡 없음
-            if (performance.getCurrentSong().getSong() == null) {
-                throw new SongNotFoundException();
-            }
-            currentSongTitle = performance.getCurrentSong().getSong().getTitle();
-            currentSongArtist = performance.getCurrentSong().getSong().getArtist();
-            currentSongAlbumUrl = performance.getCurrentSong().getSong().getAlbumImgUrl();
-        }
-
-        // morelink 리스트 생성
-        List<MoreLinkDto> moreLinks = performanceMoreLinkRepository.findAllByPerformanceId(performance.getId())
-                .stream()
-                .map(p -> new MoreLinkDto(
-                        p.getType().toString(),
-                        p.getName(),
-                        p.getUrl()
-                ))
-                .toList();
-
-        // 반환
         return new PerformanceDetailResponseDto(
                 performance.getId(),
-                performance.getWebsiteName(),
-                performance.getWebsiteDescription(),
                 imageUrls,
                 performance.getTitle(),
-                performance.getSubtitle(),
-                performance.getDescription(),
-                performance.formatDateTimeWithDay(performance.getDateTime()),
+                dateTimeFormatted,
                 performance.getVenue(),
                 performance.getOpenchatUrl(),
                 posterUrls,
-                currentSongTitle,
-                currentSongArtist,
-                currentSongAlbumUrl,
-                performance.getLocation(),
-                moreLinks
+                performance.getLocation()
         );
     }
 
