@@ -209,15 +209,10 @@ public class PerformanceServiceImpl implements PerformanceService {
                         p.getSong().getTitle(),
                         p.getSong().getArtist()
                 ))
-                .sorted(Comparator.comparingInt(PerformanceSetListDetail::order)) // order 기준 정렬
+                .sorted(Comparator.comparingInt(PerformanceSetListDetail::order))
                 .toList();
 
-        // currentSong이 null일 수 있는 경우 처리
-        int currentSongId = performance.getCurrentSong() != null
-                ? performance.getCurrentSong().getOrderInPerformance()
-                : -1;
-
-        return new PerformanceSetlistResponse(currentSongId, performance.getSetlistUrl(), setList);
+        return new PerformanceSetlistResponse(setList);
     }
 
     // BandSession 생성 헬퍼 메서드
