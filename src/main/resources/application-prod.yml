@@ -14,7 +14,8 @@ spring:
   jpa:
     show-sql: ${SPRING_JPA_SHOW_SQL:false}
     hibernate:
-      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:none}
+      ddl-auto: update
+      # ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:none}
 
   servlet:
     multipart:
