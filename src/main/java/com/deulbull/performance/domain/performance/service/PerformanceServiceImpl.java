@@ -7,21 +7,17 @@ import com.deulbull.performance.domain.band.repository.BandSessionRepository;
 import com.deulbull.performance.domain.band.repository.PersonRepository;
 import com.deulbull.performance.domain.performance.entity.Performance;
 import com.deulbull.performance.domain.performance.entity.PerformanceImage;
-import com.deulbull.performance.domain.performance.entity.PerformanceMoreLink;
 import com.deulbull.performance.domain.performance.exception.PerformanceNotFoundException;
 import com.deulbull.performance.domain.performance.repository.PerformanceImageRepository;
-import com.deulbull.performance.domain.performance.repository.PerformanceMoreLinkRepository;
 import com.deulbull.performance.domain.performance.repository.PerformanceRepository;
-import com.deulbull.performance.domain.performance.web.dto.PerformanceCreateRequestDto;
-import com.deulbull.performance.domain.performance.web.dto.PerformanceCreateRequestDto.MembersDto;
+import com.deulbull.performance.domain.performance.web.dto.PerformanceCreateBasicDto;
 import com.deulbull.performance.domain.performance.web.dto.PerformanceDetailResponseDto;
-import com.deulbull.performance.domain.performance.web.dto.PerformanceDetailResponseDto.MoreLinkDto;
+import com.deulbull.performance.domain.performance.web.dto.PerformanceSetlistRequestDto;
 import com.deulbull.performance.domain.performance.web.dto.PerformanceSetlistResponse;
 import com.deulbull.performance.domain.performance.web.dto.PerformanceSetlistResponse.PerformanceSetListDetail;
 import com.deulbull.performance.domain.performanceSongs.entity.PerformanceSong;
 import com.deulbull.performance.domain.performanceSongs.repository.PerformanceSongsRepository;
 import com.deulbull.performance.domain.song.entity.Song;
-import com.deulbull.performance.domain.song.exception.SongNotFoundException;
 import com.deulbull.performance.domain.song.repository.SongRepository;
 import com.deulbull.performance.global.s3.S3Uploader;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -40,7 +37,6 @@ public class PerformanceServiceImpl implements PerformanceService {
 
     private final PerformanceRepository performanceRepository;
     private final PerformanceImageRepository performanceImageRepository;
-    private final PerformanceMoreLinkRepository performanceMoreLinkRepository;
     private final PerformanceSongsRepository performanceSongsRepository;
     private final SongRepository songRepository;
     private final PersonRepository personRepository;
@@ -50,34 +46,35 @@ public class PerformanceServiceImpl implements PerformanceService {
     @Override
     @Transactional
     public PerformanceDetailResponseDto createPerformance(
-            PerformanceCreateRequestDto requestDto,
+            PerformanceCreateBasicDto basicInfo,
+            PerformanceSetlistRequestDto setlistRequest,
             MultipartFile posterFront,
             MultipartFile posterBack,
             List<MultipartFile> images) {
 
-        // 1. Performance 엔티티 생성 및 저장
+        // 1. Performance 엔티티 생성 및 저장 (제거된 필드는 null)
         Performance performance = Performance.builder()
-                .websiteName(requestDto.websiteName())
-                .websiteDescription(requestDto.websiteDescription())
-                .title(requestDto.title())
-                .subtitle(requestDto.subtitle())
-                .description(requestDto.description())
-                .location(requestDto.location())
-                .venue(requestDto.venue())
-                .dateTime(requestDto.dateTime())
-                .preSaleFee(requestDto.preSaleFee())
-                .onSiteFee(requestDto.onSiteFee())
-                .preSaleEndTime(requestDto.preSaleEndTime())
+                .websiteName(null)
+                .websiteDescription(null)
+                .title(basicInfo.title())
+                .subtitle(null)
+                .description(null)
+                .location(basicInfo.location())
+                .venue(basicInfo.venue())
+                .dateTime(basicInfo.dateTime())
+                .preSaleFee(basicInfo.preSaleFee())
+                .onSiteFee(basicInfo.onSiteFee())
+                .preSaleEndTime(basicInfo.preSaleEndTime())
                 .posterFrontUrl(null)
                 .posterBackUrl(null)
-                .openchatUrl(requestDto.openchatUrl())
-                .bankName(requestDto.bankName())
-                .bankAccount(requestDto.bankAccount())
-                .accountHolder(requestDto.accountHolder())
-                .kakaopayUrl(requestDto.kakaopayUrl())
-                .naverpayUrl(requestDto.naverpayUrl())
-                .setlistUrl(requestDto.setlistUrl())
-                .currentSong(null) // 초기에는 현재 곡 없음
+                .openchatUrl(basicInfo.phoneNumber())
+                .bankName(basicInfo.bankName())
+                .bankAccount(basicInfo.bankAccount())
+                .accountHolder(basicInfo.accountHolder())
+                .kakaopayUrl(basicInfo.kakaopayUrl())
+                .naverpayUrl(basicInfo.naverpayUrl())
+                .setlistUrl(basicInfo.setlistUrl())
+                .currentSong(null)
                 .build();
 
         performanceRepository.save(performance);
@@ -102,9 +99,9 @@ public class PerformanceServiceImpl implements PerformanceService {
         }
 
         // 3. 공연 이미지 S3 업로드 + PerformanceImage 저장
-        List<String> imageUrls = new ArrayList<>();
         if (images != null && !images.isEmpty()) {
             int index = 1;
+            List<PerformanceImage> performanceImages = new ArrayList<>();
             for (MultipartFile image : images) {
                 if (image == null || image.isEmpty()) continue;
 
@@ -112,43 +109,24 @@ public class PerformanceServiceImpl implements PerformanceService {
                         image,
                         "performance/" + performanceId + "/image" + index++
                 );
-                imageUrls.add(url);
+                performanceImages.add(PerformanceImage.builder()
+                        .imageUrl(url)
+                        .performance(performance)
+                        .build());
             }
-
-            if (!imageUrls.isEmpty()) {
-                List<PerformanceImage> performanceImages = imageUrls.stream()
-                        .map(url -> PerformanceImage.builder()
-                                .imageUrl(url)
-                                .performance(performance)
-                                .build())
-                        .toList();
+            if (!performanceImages.isEmpty()) {
                 performanceImageRepository.saveAll(performanceImages);
             }
         }
 
-        // 4. PerformanceMoreLink 생성 및 저장
-        if (requestDto.moreLinks() != null && !requestDto.moreLinks().isEmpty()) {
-            List<PerformanceMoreLink> moreLinks = requestDto.moreLinks().stream()
-                    .map(dto -> PerformanceMoreLink.builder()
-                            .name(dto.name())
-                            .type(dto.type())
-                            .url(dto.url())
-                            .performance(performance)
-                            .build())
-                    .toList();
-            performanceMoreLinkRepository.saveAll(moreLinks);
-        }
-
-        // 5. Song 및 PerformanceSong 생성
-        if (requestDto.setlist() != null && !requestDto.setlist().isEmpty()) {
-            for (var psDto : requestDto.setlist()) {
-                // 5-1. 곡 중복 체크 (title + artist)
+        // 4. Song 및 PerformanceSong 생성 (moreLinks 제거됨)
+        if (setlistRequest.setlist() != null && !setlistRequest.setlist().isEmpty()) {
+            for (var psDto : setlistRequest.setlist()) {
                 Song song = songRepository.findByTitleAndArtist(
                                 psDto.song().title(),
                                 psDto.song().artist()
                         )
                         .orElseGet(() -> {
-                            // 5-2. 곡이 없으면 새로 생성
                             Song newSong = Song.builder()
                                     .title(psDto.song().title())
                                     .artist(psDto.song().artist())
@@ -162,26 +140,23 @@ public class PerformanceServiceImpl implements PerformanceService {
                             return songRepository.save(newSong);
                         });
 
-                // 5-3. PerformanceSong 생성 및 저장
                 PerformanceSong performanceSong = PerformanceSong.builder()
                         .orderInPerformance(psDto.orderInPerformance())
-                        .likes(0) // 초기 좋아요 수 0
+                        .likes(0)
                         .performance(performance)
                         .song(song)
                         .build();
                 performanceSongsRepository.save(performanceSong);
 
-                // 5-4. BandSession 생성 (members 정보 처리)
                 if (psDto.members() != null) {
                     createBandSessions(performanceSong, psDto.members());
                 }
             }
         }
-        // 6. Performance 엔티티에 포스터 URL 반영
+
         performance.setPosterFrontUrl(posterFrontUrl);
         performance.setPosterBackUrl(posterBackUrl);
 
-        // 7. 생성된 공연 상세 정보 반환
         return getPerformanceDetail(performance.getId());
     }
 
@@ -201,50 +176,20 @@ public class PerformanceServiceImpl implements PerformanceService {
         posterUrls.add(performance.getPosterFrontUrl());
         posterUrls.add(performance.getPosterBackUrl());
 
-        // 현재 곡
-        String currentSongTitle = null;
-        String currentSongArtist = null;
-        String currentSongAlbumUrl = null;
+        // dateTime: yyyy.MM.dd 형식
+        String dateTimeFormatted = performance.getDateTime() != null
+                ? performance.getDateTime().format(DateTimeFormatter.ofPattern("yyyy.MM.dd"))
+                : "";
 
-
-        if (performance.getCurrentSong() != null) {
-            // 404: 해당 ID의 곡 없음
-            if (performance.getCurrentSong().getSong() == null) {
-                throw new SongNotFoundException();
-            }
-            currentSongTitle = performance.getCurrentSong().getSong().getTitle();
-            currentSongArtist = performance.getCurrentSong().getSong().getArtist();
-            currentSongAlbumUrl = performance.getCurrentSong().getSong().getAlbumImgUrl();
-        }
-
-        // morelink 리스트 생성
-        List<MoreLinkDto> moreLinks = performanceMoreLinkRepository.findAllByPerformanceId(performance.getId())
-                .stream()
-                .map(p -> new MoreLinkDto(
-                        p.getType().toString(),
-                        p.getName(),
-                        p.getUrl()
-                ))
-                .toList();
-
-        // 반환
         return new PerformanceDetailResponseDto(
                 performance.getId(),
-                performance.getWebsiteName(),
-                performance.getWebsiteDescription(),
                 imageUrls,
                 performance.getTitle(),
-                performance.getSubtitle(),
-                performance.getDescription(),
-                performance.formatDateTimeWithDay(performance.getDateTime()),
+                dateTimeFormatted,
                 performance.getVenue(),
                 performance.getOpenchatUrl(),
                 posterUrls,
-                currentSongTitle,
-                currentSongArtist,
-                currentSongAlbumUrl,
-                performance.getLocation(),
-                moreLinks
+                performance.getLocation()
         );
     }
 
@@ -276,7 +221,7 @@ public class PerformanceServiceImpl implements PerformanceService {
     }
 
     // BandSession 생성 헬퍼 메서드
-    private void createBandSessions(PerformanceSong performanceSong, MembersDto membersDto) {
+    private void createBandSessions(PerformanceSong performanceSong, PerformanceSetlistRequestDto.MembersDto membersDto) {
         List<BandSession> bandSessions = new ArrayList<>();
 
         // Vocal
