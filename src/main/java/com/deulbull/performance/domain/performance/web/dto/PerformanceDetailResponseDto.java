@@ -8,6 +8,7 @@ public record PerformanceDetailResponseDto(
         String title,
         String dateTime,
         String venue,
+        String preSaleFormUrl,
         String phoneNumber,
         List<String> posterUrls,
         String location
