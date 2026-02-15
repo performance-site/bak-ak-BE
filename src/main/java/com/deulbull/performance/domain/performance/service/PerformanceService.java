@@ -1,7 +1,8 @@
 package com.deulbull.performance.domain.performance.service;
 
-import com.deulbull.performance.domain.performance.web.dto.PerformanceCreateRequestDto;
+import com.deulbull.performance.domain.performance.web.dto.PerformanceCreateBasicDto;
 import com.deulbull.performance.domain.performance.web.dto.PerformanceDetailResponseDto;
+import com.deulbull.performance.domain.performance.web.dto.PerformanceSetlistRequestDto;
 import com.deulbull.performance.domain.performance.web.dto.PerformanceSetlistResponse;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -10,7 +11,8 @@ import java.util.List;
 public interface PerformanceService {
     // 공연 생성
     PerformanceDetailResponseDto createPerformance(
-            PerformanceCreateRequestDto requestDto,
+            PerformanceCreateBasicDto basicInfo,
+            PerformanceSetlistRequestDto setlistRequest,
             MultipartFile posterFront,
             MultipartFile posterBack,
             List<MultipartFile> images);

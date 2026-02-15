@@ -1,8 +1,9 @@
 package com.deulbull.performance.domain.performance.web.controller;
 
 import com.deulbull.performance.domain.performance.service.PerformanceService;
-import com.deulbull.performance.domain.performance.web.dto.PerformanceCreateRequestDto;
+import com.deulbull.performance.domain.performance.web.dto.PerformanceCreateBasicDto;
 import com.deulbull.performance.domain.performance.web.dto.PerformanceDetailResponseDto;
+import com.deulbull.performance.domain.performance.web.dto.PerformanceSetlistRequestDto;
 import com.deulbull.performance.domain.performance.web.dto.PerformanceSetlistResponse;
 import com.deulbull.performance.global.response.SuccessResponse;
 import jakarta.validation.Valid;
@@ -11,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/performances")
@@ -20,15 +20,16 @@ public class PerformanceController {
 
     private final PerformanceService performanceService;
 
-    // 공연 생성 API
+    // 공연 생성 API (basicInfo, setlist 각각 별도 part로 전달)
     @PostMapping(consumes = {"multipart/form-data"})
     public SuccessResponse<PerformanceDetailResponseDto> createPerformance(
-            @Valid @RequestPart PerformanceCreateRequestDto requestDto,
+            @Valid @RequestPart("basicInfo") PerformanceCreateBasicDto basicInfo,
+            @Valid @RequestPart("setlist") PerformanceSetlistRequestDto setlistRequest,
             @RequestPart("posterFront") MultipartFile posterFront,
             @RequestPart(value = "posterBack", required = false) MultipartFile posterBack,
             @RequestPart(value = "images", required = false) List<MultipartFile> images
     ) {
-        PerformanceDetailResponseDto response = performanceService.createPerformance(requestDto, posterFront, posterBack, images);
+        PerformanceDetailResponseDto response = performanceService.createPerformance(basicInfo, setlistRequest, posterFront, posterBack, images);
         return SuccessResponse.created(response);
     }
 
