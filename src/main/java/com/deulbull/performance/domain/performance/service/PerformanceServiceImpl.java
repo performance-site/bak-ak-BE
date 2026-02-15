@@ -68,6 +68,8 @@ public class PerformanceServiceImpl implements PerformanceService {
                 .posterFrontUrl(null)
                 .posterBackUrl(null)
                 .openchatUrl(basicInfo.phoneNumber())
+                .phoneNumber(basicInfo.phoneNumber())
+                .preSaleFormUrl(basicInfo.preSaleFormUrl())
                 .bankName(basicInfo.bankName())
                 .bankAccount(basicInfo.bankAccount())
                 .accountHolder(basicInfo.accountHolder())
@@ -187,7 +189,8 @@ public class PerformanceServiceImpl implements PerformanceService {
                 performance.getTitle(),
                 dateTimeFormatted,
                 performance.getVenue(),
-                performance.getOpenchatUrl(),
+                performance.getPreSaleFormUrl(),
+                performance.getPhoneNumber(),
                 posterUrls,
                 performance.getLocation()
         );

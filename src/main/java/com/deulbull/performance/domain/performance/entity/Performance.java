@@ -31,6 +31,8 @@ public class Performance extends BaseEntity {
     private String posterFrontUrl; // 포스터 앞면 이미지 URL
     private String posterBackUrl;  // 포스터 뒷면 이미지 URL
     private String openchatUrl;
+    private String phoneNumber; // 연락처 (010-xxxx-xxxx), null 가능
+    private String preSaleFormUrl; // 사전예매 폼 URL, null 가능
     private String bankName; // 은행명
     private String bankAccount; // 계좌번호
     private String accountHolder; // 예금주

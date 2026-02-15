@@ -24,6 +24,7 @@ public record PerformanceCreateBasicDto(
         LocalDateTime dateTime,
 
         String phoneNumber,
+        String preSaleFormUrl,
 
         Integer preSaleFee,
         Integer onSiteFee,
