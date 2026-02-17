@@ -12,8 +12,10 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedOrigins(
                         // 사용자 페이지
                         "http://localhost:3000",
+
                         // "https://deulbull.netlify.app",
-                        "https://bal-ak.netlify.app",
+                        "https://bal-ak.netlify.app"
+                        
                         // 관리자 페이지
                         // "http://localhost:3002",
                         // "https://deulbull-admin.netlify.app"
