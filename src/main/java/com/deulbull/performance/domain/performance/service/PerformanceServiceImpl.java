@@ -175,9 +175,12 @@ public class PerformanceServiceImpl implements PerformanceService {
 
         // 포스터 이미지 리스트 생성
         List<String> posterUrls = new ArrayList<>();
-        posterUrls.add(performance.getPosterFrontUrl());
-        posterUrls.add(performance.getPosterBackUrl());
-
+        if (performance.getPosterFrontUrl() != null) {
+            posterUrls.add(performance.getPosterFrontUrl());
+        }
+        if (performance.getPosterBackUrl() != null) {
+            posterUrls.add(performance.getPosterBackUrl());
+        }
         // dateTime: yyyy.MM.dd 형식
         String dateTimeFormatted = performance.getDateTime() != null
                 ? performance.getDateTime().format(DateTimeFormatter.ofPattern("yyyy.MM.dd"))
